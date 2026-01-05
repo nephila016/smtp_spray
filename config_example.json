@@ -1,0 +1,29 @@
+{
+  "target": {
+    "host": "mail.target.com",
+    "port": 587,
+    "ssl": false,
+    "starttls": true,
+    "timeout": 30
+  },
+  "rate_limit": {
+    "delay_between_attempts": 1.0,
+    "delay_between_users": 0.5,
+    "delay_between_passwords": 1800,
+    "jitter_min": 0.1,
+    "jitter_max": 0.5,
+    "max_attempts_per_user": 3,
+    "lockout_threshold": 5
+  },
+  "output": {
+    "log_file": "spray.log",
+    "output_file": "valid_creds.txt",
+    "progress_file": "progress.json",
+    "verbose": false
+  },
+  "username_file": "users.txt",
+  "password_file": "passwords.txt",
+  "auth_method": "AUTO",
+  "mode": "spray",
+  "enum_method": "RCPT"
+}

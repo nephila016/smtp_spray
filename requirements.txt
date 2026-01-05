@@ -1,0 +1,32 @@
+# SMTP Spray Tool Dependencies
+# Core (all included in Python standard library):
+# - smtplib
+# - ssl
+# - asyncio
+# - base64
+# - hashlib
+# - hmac
+# - logging
+# - argparse
+# - json
+# - dataclasses (Python 3.7+)
+
+# Optional dependencies for enhanced functionality:
+
+# YAML config file support
+pyyaml>=6.0
+
+# For async SMTP (alternative to smtplib)
+# aiosmtplib>=3.0.0
+
+# For colored console output (optional)
+# colorama>=0.4.6
+
+# For progress bars (optional)
+# tqdm>=4.66.0
+
+# For proxy/SOCKS support (optional)
+# PySocks>=1.7.1
+
+# For DNS resolution (optional, for MX record lookup)
+# dnspython>=2.4.0

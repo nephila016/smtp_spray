@@ -1,0 +1,50 @@
+# Example usernames for SMTP enumeration/spraying
+# Replace with actual target usernames from reconnaissance
+
+# Common service accounts
+admin@target.com
+administrator@target.com
+postmaster@target.com
+webmaster@target.com
+hostmaster@target.com
+info@target.com
+support@target.com
+sales@target.com
+contact@target.com
+help@target.com
+service@target.com
+noreply@target.com
+no-reply@target.com
+
+# Common role-based accounts
+hr@target.com
+it@target.com
+finance@target.com
+marketing@target.com
+legal@target.com
+security@target.com
+helpdesk@target.com
+accounts@target.com
+billing@target.com
+
+# Common first names (customize based on locale)
+john@target.com
+jane@target.com
+michael@target.com
+sarah@target.com
+david@target.com
+emily@target.com
+james@target.com
+jennifer@target.com
+robert@target.com
+lisa@target.com
+
+# First.Last format examples
+john.smith@target.com
+jane.doe@target.com
+admin.user@target.com
+
+# First initial + last name format
+jsmith@target.com
+jdoe@target.com
+mwilson@target.com
