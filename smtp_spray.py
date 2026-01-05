@@ -83,6 +83,7 @@ class Target:
     port: int = 587
     connection_type: ConnectionType = ConnectionType.STARTTLS
     timeout: int = 30
+    insecure: bool = False  # Skip SSL certificate verification
 
 @dataclass
 class Credential:
@@ -237,9 +238,10 @@ class SMTPConnectionManager:
     def _create_ssl_context(self) -> ssl.SSLContext:
         """Create SSL context for secure connections"""
         context = ssl.create_default_context()
-        # For testing, you may need to disable verification
-        # context.check_hostname = False
-        # context.verify_mode = ssl.CERT_NONE
+        # Disable certificate verification if --insecure flag is used
+        if self.target.insecure:
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
         return context
 
     def connect(self) -> bool:
@@ -965,6 +967,8 @@ Examples:
                               help="Don't use STARTTLS (plain connection)")
     target_group.add_argument("--timeout", type=int, default=30,
                               help="Connection timeout in seconds (default: 30)")
+    target_group.add_argument("-k", "--insecure", action="store_true",
+                              help="Skip SSL certificate verification (for self-signed certs)")
 
     # Credentials
     cred_group = parser.add_argument_group("Credentials")
@@ -1048,10 +1052,13 @@ async def main():
         host=args.target,
         port=port,
         connection_type=conn_type,
-        timeout=args.timeout
+        timeout=args.timeout,
+        insecure=args.insecure
     )
 
     logger.info(f"Target: {target.host}:{target.port} ({target.connection_type.value})")
+    if args.insecure:
+        logger.warning("SSL certificate verification DISABLED (--insecure)")
 
     # Load usernames
     usernames = []
