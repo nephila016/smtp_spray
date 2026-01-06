@@ -713,11 +713,36 @@ class SprayController:
         self.connection_manager = SMTPConnectionManager(self.target, self.logger)
         return self.connection_manager.connect()
 
-    def _reconnect(self) -> bool:
-        """Reconnect to server"""
-        if self.connection_manager:
-            self.connection_manager.disconnect()
-        return self._connect()
+    def _reconnect(self, max_retries: int = 3, retry_delay: float = 5.0) -> bool:
+        """Reconnect to server with retries"""
+        for attempt in range(max_retries):
+            if self.connection_manager:
+                self.connection_manager.disconnect()
+
+            self.logger.debug(f"Reconnection attempt {attempt + 1}/{max_retries}...")
+
+            if self._connect():
+                self.logger.debug("Reconnection successful")
+                return True
+
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+
+        return False
+
+    def _ensure_connection(self) -> bool:
+        """Ensure we have a valid connection, reconnect if needed"""
+        if self.connection_manager and self.connection_manager.connection:
+            try:
+                # Test connection with NOOP
+                self.connection_manager.connection.noop()
+                return True
+            except:
+                pass
+
+        # Connection lost, reconnect
+        self.logger.debug("Connection lost, reconnecting...")
+        return self._reconnect()
 
     async def run_spray(self, resume: bool = False) -> List[AttemptResult]:
         """
@@ -763,17 +788,36 @@ class SprayController:
 
                 self.progress.current_user_index = user_idx
 
-                # Attempt authentication
-                try:
-                    result = self.connection_manager.authenticate(
-                        username, password, self.auth_method
+                # Ensure connection is alive before attempting auth
+                if not self._ensure_connection():
+                    self.logger.error("Failed to establish connection, stopping")
+                    break
+
+                # Attempt authentication with retry
+                result = None
+                for retry in range(3):
+                    try:
+                        result = self.connection_manager.authenticate(
+                            username, password, self.auth_method
+                        )
+                        break  # Success, exit retry loop
+                    except Exception as e:
+                        self.logger.warning(f"Auth error (attempt {retry + 1}/3): {e}")
+                        if retry < 2:  # Don't reconnect on last attempt
+                            if not self._reconnect():
+                                self.logger.error("Reconnection failed")
+                                break
+                            time.sleep(2)  # Brief pause before retry
+
+                if result is None:
+                    # All retries failed, create a failed result and continue
+                    result = AttemptResult(
+                        username=username,
+                        password=password,
+                        success=False,
+                        timestamp=datetime.now().isoformat(),
+                        response_message="Connection failed after retries"
                     )
-                except Exception as e:
-                    self.logger.warning(f"Auth error, reconnecting: {e}")
-                    if not self._reconnect():
-                        self.logger.error("Reconnection failed, stopping")
-                        break
-                    continue
 
                 results.append(result)
                 self.progress.total_attempts += 1
@@ -849,15 +893,34 @@ class SprayController:
                 if self.rate_limiter.should_skip_user(username):
                     break
 
-                try:
-                    result = self.connection_manager.authenticate(
-                        username, password, self.auth_method
-                    )
-                except Exception as e:
-                    self.logger.warning(f"Auth error, reconnecting: {e}")
-                    if not self._reconnect():
+                # Ensure connection is alive
+                if not self._ensure_connection():
+                    self.logger.error("Failed to establish connection")
+                    break
+
+                # Attempt authentication with retry
+                result = None
+                for retry in range(3):
+                    try:
+                        result = self.connection_manager.authenticate(
+                            username, password, self.auth_method
+                        )
                         break
-                    continue
+                    except Exception as e:
+                        self.logger.warning(f"Auth error (attempt {retry + 1}/3): {e}")
+                        if retry < 2:
+                            if not self._reconnect():
+                                break
+                            time.sleep(2)
+
+                if result is None:
+                    result = AttemptResult(
+                        username=username,
+                        password=password,
+                        success=False,
+                        timestamp=datetime.now().isoformat(),
+                        response_message="Connection failed after retries"
+                    )
 
                 results.append(result)
                 self.progress.total_attempts += 1
